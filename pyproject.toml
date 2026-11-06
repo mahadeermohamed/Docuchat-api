@@ -1,0 +1,23 @@
+[project]
+name = "ai-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "mahadeermohamed", email = "mahadeermohamed063@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.162.0",
+    "python-dotenv>=1.2.4",
+    "requests>=2.34.2",
+    "sqlalchemy-orm>=1.2.10",
+    "uvicorn>=0.54.0",
+]
+
+[project.scripts]
+ai-project = "ai_project:main"
+
+[build-system]
+requires = ["uv_build>=0.12.16,<0.13.0"]
+build-backend = "uv_build"
