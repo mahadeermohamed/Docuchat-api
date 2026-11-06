@@ -1,7 +1,5 @@
-from pydoc import doc
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typer import prompt
 from llm import call_llm
 from db import init_db, save_message, get_all_messages, get_last_messages, save_document, get_document
 app = FastAPI()
