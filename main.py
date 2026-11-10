@@ -13,7 +13,7 @@ class ChatRequest(BaseModel):
 def chat(req: ChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
-    save_message("User", req.message)
+    save_message("user", req.message)
 
     history = get_last_messages(10)
     while history and history[0]["role"] == "model":
@@ -46,7 +46,7 @@ def add_document(req: DocRequest):
 
 @app.post("/documents/{doc_id}/ask")
 def ask_document(doc_id: int, req: AskRequest):
-    if not req.question:
+    if not req.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
     doc = get_document(doc_id)
     if not doc:
@@ -56,7 +56,7 @@ def ask_document(doc_id: int, req: AskRequest):
 If the answer is not in the document, say "I couldn't find that in the document."
 
 Document:
-{doc[2]}
+{doc['content']}
 
 Question: {req.question}"""
     
