@@ -8,9 +8,12 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "bcrypt>=5.0.0",
     "fastapi[standard]>=0.162.0",
     "mysql-connector-python>=26.10.0",
+    "pyjwt>=2.15.1",
     "python-dotenv>=1.2.4",
+    "python-multipart>=0.0.33",
     "requests>=2.34.2",
     "sqlalchemy-orm>=1.2.10",
     "uvicorn>=0.54.0",
@@ -22,3 +25,6 @@ ai-project = "ai_project:main"
 [build-system]
 requires = ["uv_build>=0.12.16,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv]
+package = false

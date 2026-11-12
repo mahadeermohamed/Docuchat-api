@@ -28,62 +28,106 @@ def get_conn():
 def init_db():
     with get_conn() as conn:
         cur = conn.cursor()
+        # users must be created first, because the other tables reference it
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users(
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                username VARCHAR(50) NOT NULL UNIQUE,
+                password_hash VARCHAR(255) NOT NULL
+            )
+        """)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS messages(
                 id INT PRIMARY KEY AUTO_INCREMENT,
+                user_id INT NOT NULL,
                 role VARCHAR(20) NOT NULL,
                 text TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS documents(
                 id INT PRIMARY KEY AUTO_INCREMENT,
+                user_id INT NOT NULL,
                 title VARCHAR(255) NOT NULL,
-                content LONGTEXT NOT NULL
+                content LONGTEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
 
 
+# USERS
+def create_user(username: str, password_hash: str):
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO users (username, password_hash) VALUES (%s, %s)",
+                (username, password_hash),
+            )
+            return cur.lastrowid
+    except mysql.connector.IntegrityError:
+        return None  # username already taken
+
+
+def get_user(username: str):
+    with get_conn() as conn:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            "SELECT id, username, password_hash FROM users WHERE username = %s",
+            (username,),
+        )
+        return cur.fetchone()  # a dict, or None
+
+
 # DOCUMENT Q&A
-def save_document(title: str, content: str):
+def save_document(user_id: int, title: str, content: str):
     with get_conn() as conn:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO documents (title, content) VALUES (%s, %s)",
-            (title, content),
+            "INSERT INTO documents (user_id, title, content) VALUES (%s, %s, %s)",
+            (user_id, title, content),
         )
         return cur.lastrowid
 
 
-def get_document(doc_id: int):
+def get_document(doc_id: int, user_id: int):
     with get_conn() as conn:
         cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT id, title, content FROM documents WHERE id = %s", (doc_id,))
-        return cur.fetchone()  # a dict, or None if not found
+        cur.execute(
+            "SELECT id, title, content FROM documents WHERE id = %s AND user_id = %s",
+            (doc_id, user_id),
+        )
+        return cur.fetchone()
 
 
 # MESSAGE HISTORY
-def save_message(role: str, text: str):
+def save_message(user_id: int, role: str, text: str):
     with get_conn() as conn:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO messages (role, text) VALUES (%s, %s)", (role, text)
+            "INSERT INTO messages (user_id, role, text) VALUES (%s, %s, %s)",
+            (user_id, role, text),
         )
 
 
-def get_all_messages():
-    with get_conn() as conn:
-        cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT role, text, created_at FROM messages ORDER BY id")
-        return cur.fetchall()
-
-
-def get_last_messages(limit: int = 10):
+def get_all_messages(user_id: int):
     with get_conn() as conn:
         cur = conn.cursor(dictionary=True)
         cur.execute(
-            "SELECT role, text FROM messages ORDER BY id DESC LIMIT %s", (limit,)
+            "SELECT role, text, created_at FROM messages WHERE user_id = %s ORDER BY id",
+            (user_id,),
+        )
+        return cur.fetchall()
+
+
+def get_last_messages(user_id: int, limit: int = 10):
+    with get_conn() as conn:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            "SELECT role, text FROM messages WHERE user_id = %s ORDER BY id DESC LIMIT %s",
+            (user_id, limit),
         )
         rows = cur.fetchall()
     rows.reverse()
